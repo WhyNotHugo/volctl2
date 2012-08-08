@@ -21,7 +21,7 @@ import time
 try:
     import alsaaudio
 except:
-    print "Error: need python-pyalsaaudio"
+    print("Error: need python-pyalsaaudio")
 
 
 class VolumeModifierThread(threading.Thread):
@@ -30,8 +30,8 @@ class VolumeModifierThread(threading.Thread):
     stopped, or the limit is reached; whichever comes first.
     """
 
-    #stop = False
-    modifier = None
+    stop = False
+    delta = None
     notification = None
 
     def __init__(self, notification):
@@ -41,28 +41,28 @@ class VolumeModifierThread(threading.Thread):
     def run(self):
         self._stop = False
         while not self._stop:
-            self.change_volume(self.modifier)
+            self.change_volume(self.delta)
+            self.delta = self.delta * 1.2
             time.sleep(0.1)
 
     def change_volume(self, delta):
         previous_volume = long(alsaaudio.Mixer().getvolume()[0])
 
-        new_volume = long(previous_volume + long(delta))
-        print 'Volume was {}, setting to : {}'.format(previous_volume, new_volume)
+        new_volume = long(previous_volume + delta)
         if new_volume > 100:
             new_volume = 100
         if new_volume < 0:
             new_volume = 0
+        print('Delta is {}, volume was {}, setting to : {}'.format(delta, previous_volume, new_volume))
 
         if previous_volume == 100 and delta > 0:
-            print "Volume is 100 and requested increase; stopping."
+            print("Volume is 100 and requested increase; stopping.")
             self.stop()
         if previous_volume == 0 and delta < 0:
-            print "Volume is 0 and requested decrease; stopping."
+            print("Volume is 0 and requested decrease; stopping.")
             self.stop()
 
         alsaaudio.Mixer().setvolume(new_volume)
-
         self.notification.update()
 
     def stop(self):
