@@ -1,0 +1,3 @@
+#!/bin/sh
+
+python2 -c "import volctl2; volctl2.run()"

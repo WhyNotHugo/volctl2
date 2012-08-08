@@ -15,3 +15,39 @@
 # WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+from button_listener import MouseButtonListener
+from volume_notification import VolumeNotification
+
+from threading import Thread
+import sys
+
+try:
+    import gtk
+    import pygtk
+    import pynotify
+    pygtk.require('2.0')
+except:
+    print("Error: need python-notify, python-gtk2 and gtk")
+
+
+class GtkThread(Thread):
+    def __init__(self):
+        super(GtkThread, self).__init__()
+        gtk.gdk.threads_init()
+
+    def run(self):
+        gtk.main()
+
+
+def run():
+    if not pynotify.init("Volume Control v2.0"):
+        sys.exit(1)
+
+    notification = VolumeNotification()
+    MouseButtonListener(notification).start()
+    GtkThread().start()
+
+
+if __name__ == "__main__":
+    run()

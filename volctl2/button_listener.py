@@ -39,15 +39,15 @@ class MouseButtonListener(threading.Thread):
         self.volume_modifier = VolumeModifierThread(notification)
         self.notification = notification
 
-    def run(self):
         self.display = display.Display()
-
         if not self.display.has_extension("RECORD"):
-            print "RECORD extension not found"
+            print("RECORD extension not found")
             sys.exit(-1)
-        r = self.display.record_get_version(0, 0)
-        print "RECORD extension version %d.%d" % (r.major_version, r.minor_version)
 
+        r = self.display.record_get_version(0, 0)
+        print("RECORD extension version %d.%d" % (r.major_version, r.minor_version))
+
+    def run(self):
         ctx = self.display.record_create_context(
                 0,
                 [record.AllClients],
@@ -74,11 +74,10 @@ class MouseButtonListener(threading.Thread):
         if reply.category != record.FromServer:
             return
         if reply.client_swapped:
-            print "* received swapped protocol data, cowardly ignored"
+            print("* received swapped protocol data, cowardly ignored")
             return
         if not len(reply.data) or ord(reply.data[0]) < 2:
-            # not an event
-            return
+            return  # not an event
 
         data = reply.data
         while len(data):
@@ -90,9 +89,9 @@ class MouseButtonListener(threading.Thread):
                 if not self.volume_modifier.is_alive():
                     self.volume_modifier = VolumeModifierThread(self.notification)
                 if event.detail == 10:
-                    self.volume_modifier.modifier = -3
+                    self.volume_modifier.delta = -3
                 elif event.detail == 13:
-                    self.volume_modifier.modifier = +3
+                    self.volume_modifier.delta = +3
                 if not self.volume_modifier.is_alive():
                     self.volume_modifier.start()
             elif event.type == X.ButtonRelease and event.detail in [10, 13]:
