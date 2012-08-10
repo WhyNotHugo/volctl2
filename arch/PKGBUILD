@@ -1,0 +1,20 @@
+# Maintainer: Hugo Osvaldo Barrera <hugo@osvaldobarrera.com.ar>
+pkgname=volctl2
+pkgver=2.0.1
+_pkgcommit=aec407fba51a828f111e5d2092cbbd30d7107318
+# TODO: extract this from the above
+_pkgshortcommit=aec407f
+pkgrel=1
+pkgdesc="A volume control daemon designed to work with a Logitech Performance MX"
+arch=('any')
+url="https://github.com/hobarrera/volctl2"
+license=('BSD')
+depends=('python-notify' 'pygtk' 'python-xlib' 'python-pyalsaaudio')
+makedepends=('python2')
+source=("https://github.com/hobarrera/${pkgname}/tarball/${_pkgcommit}")
+md5sums=(7ec4c55ba26bead4d2b5c46be6c11631)
+
+package() {
+  cd "$srcdir/hobarrera-$pkgname-${_pkgshortcommit}"
+  python2 setup.py install --root="$pkgdir/" --optimize=1
+}
