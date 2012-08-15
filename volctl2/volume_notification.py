@@ -31,18 +31,21 @@ except:
 class VolumeNotification():
 
     def __init__(self):
-        self._notification = pynotify.Notification("Volume", self.get_volume(), "audio-volume-medium")
-        self._notification.add_action("increase", "+", self.increase_volume)
-        self._notification.add_action("decrease", "-", self.decrease_volume)
-        self._notification.add_action("mute", "Mute", self.toggle_mute)
-        self._notification.show()
+        """A wrapper around a libnotify notification, with several buttons, and volume-control functionality"""
+
+        self.__popup = pynotify.Notification("Volume", str(self.get_volume()) + "%", "audio-volume-medium")
+        self.__popup.add_action("increase", "+", self.increase_volume)
+        self.__popup.add_action("decrease", "-", self.decrease_volume)
+        self.__popup.add_action("mute", "Mute", self.toggle_mute)
+        self.__popup.show()
+
+        self._mixer = alsaaudio.Mixer()
 
     def get_volume(self):
-        volume = str(alsaaudio.Mixer().getvolume()[0])
-        return volume + "%"
+        return alsaaudio.Mixer().getvolume()[0]
 
     def alter_volume(self, delta):
-        previous_volume = long(alsaaudio.Mixer().getvolume()[0])
+        previous_volume = self.get_volume()
 
         new_volume = long(previous_volume + long(delta))
         print 'Volume was {}, setting to : {}'.format(previous_volume, new_volume)
@@ -51,25 +54,32 @@ class VolumeNotification():
         if new_volume < 0:
             new_volume = 0
 
-        alsaaudio.Mixer().setvolume(new_volume)
-        self.update()
+        self.set_volume(new_volume)
+
+    def set_volume(self, new_volume):
+        self._mixer.setvolume(new_volume)
+        self._update()
 
     def increase_volume(self, notification=None, action=None, data=None):
-        self.alter_volume(3L)
+        self.alter_volume(3)
 
     def decrease_volume(self, notification=None, action=None, data=None):
-        self.alter_volume(-3L)
+        self.alter_volume(-3)
 
     def toggle_mute(self, notification=None, action=None, data=None):
-        if alsaaudio.Mixer().getmute()[0] == 0:
-            alsaaudio.Mixer().setmute(1)
-        elif alsaaudio.Mixer().getmute()[0] == 1:
-            alsaaudio.Mixer().setmute(0)
-        self.update()
+        if self.is_muted():
+            self._mixer.setmute(0)
+            self._update()
+        else:
+            self._mixer.setmute(1)
+            self._update()
 
-    def update(self):
-        if alsaaudio.Mixer().getmute()[0] == 0:
-            self._notification.update("Volume", self.get_volume(), "audio-volume-medium")
-        elif alsaaudio.Mixer().getmute()[0] == 1:
-            self._notification.update("Volume", self.get_volume() + " (Muted)", "audio-volume-muted")
-        self._notification.show()
+    def is_muted(self):
+        return self._mixer.getmute()[0] == 1
+
+    def _update(self):
+        if not self.is_muted():
+            self.__popup.update("Volume", str(self.get_volume()) + "%", "audio-volume-medium")
+        else:
+            self.__popup.update("Volume", str(self.get_volume()) + "% (Muted)", "audio-volume-muted")
+        self.__popup.show()

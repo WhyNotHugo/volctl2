@@ -32,11 +32,11 @@ class VolumeModifierThread(threading.Thread):
 
     stop = False
     delta = None
-    notification = None
+    volume = None
 
-    def __init__(self, notification):
+    def __init__(self, volume_control):
         super(VolumeModifierThread, self).__init__()
-        self.notification = notification
+        self.volume = volume_control
 
     def run(self):
         self._stop = False
@@ -62,8 +62,10 @@ class VolumeModifierThread(threading.Thread):
             print("Volume is 0 and requested decrease; stopping.")
             self.stop()
 
-        alsaaudio.Mixer().setvolume(new_volume)
-        self.notification.update()
+        self.volume.set_volume(new_volume)
+
+    def toggle_mute(self):
+        self.volume.toggle_mute()
 
     def stop(self):
         self._stop = True
