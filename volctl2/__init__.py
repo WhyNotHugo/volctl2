@@ -16,9 +16,10 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-from button_listener import MouseButtonListener
+from listener import MouseButtonListener, MediaKeyListener
 from volume_notification import VolumeNotification
 
+from Xlib import display
 from threading import Thread
 import sys
 
@@ -30,8 +31,11 @@ try:
 except:
     print("Error: need python-notify, python-gtk2 and gtk")
 
+__version__ = "2.0.0"
+
 
 class GtkThread(Thread):
+    """This thread needs to run separately to handle button clicks on the volume"""
     def __init__(self):
         super(GtkThread, self).__init__()
         gtk.gdk.threads_init()
@@ -41,11 +45,18 @@ class GtkThread(Thread):
 
 
 def run():
-    if not pynotify.init("Volume Control v2.0"):
+    print("Volume Control v{}".format(__version__))
+
+    if not pynotify.init("Volume Control v{}".format(__version__)):
+        sys.exit(1)
+
+    if not display.Display().has_extension("RECORD"):
+        print("RECORD extension not found")
         sys.exit(1)
 
     notification = VolumeNotification()
     MouseButtonListener(notification).start()
+    MediaKeyListener(notification).start()
     GtkThread().start()
 
 

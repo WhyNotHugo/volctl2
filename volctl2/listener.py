@@ -22,32 +22,28 @@ from Xlib.protocol import rq
 from volume_modifier import VolumeModifierThread
 
 import threading
-import sys
 
 
-class MouseButtonListener(threading.Thread):
+class BaseXListener(threading.Thread):
     """
-    Thread that listens to mouse buttons presses.
+    A generic thread to listen to X events.
+    `processEvent(event)` needs to be overridden by subclases
     """
 
     volume_modifier = None
     display = None
-    notification = None
+    volume = None
 
     def __init__(self, notification):
-        super(MouseButtonListener, self).__init__()
+        super(BaseXListener, self).__init__()
         self.volume_modifier = VolumeModifierThread(notification)
-        self.notification = notification
-
+        self.volume = notification
         self.display = display.Display()
-        if not self.display.has_extension("RECORD"):
-            print("RECORD extension not found")
-            sys.exit(-1)
 
         r = self.display.record_get_version(0, 0)
-        print("RECORD extension version %d.%d" % (r.major_version, r.minor_version))
+        print("RECORD extension version {}.{}".format(r.major_version, r.minor_version))
 
-    def run(self):
+    def listen(self, device_events=(0, 0)):
         ctx = self.display.record_create_context(
                 0,
                 [record.AllClients],
@@ -57,7 +53,7 @@ class MouseButtonListener(threading.Thread):
                         'ext_requests': (0, 0, 0, 0),
                         'ext_replies': (0, 0, 0, 0),
                         'delivered_events': (0, 0),
-                        'device_events': (X.ButtonPress, X.ButtonRelease),
+                        'device_events': device_events,
                         'errors': (0, 0),
                         'client_started': False,
                         'client_died': False,
@@ -82,18 +78,59 @@ class MouseButtonListener(threading.Thread):
         data = reply.data
         while len(data):
             event, data = rq.EventField(None).parse_binary_value(data, self.display.display, None, None)
+            self.processEvent(event)
 
-            if event.detail not in [10, 13]:
-                return
-            if event.type == X.ButtonPress:
-                if not self.volume_modifier.is_alive():
-                    self.volume_modifier = VolumeModifierThread(self.notification)
-                if event.detail == 10:
-                    self.volume_modifier.delta = -3
-                elif event.detail == 13:
-                    self.volume_modifier.delta = +3
-                if not self.volume_modifier.is_alive():
-                    self.volume_modifier.start()
-            elif event.type == X.ButtonRelease and event.detail in [10, 13]:
-                if self.volume_modifier.is_alive():
-                    self.volume_modifier.stop()
+    def stop(self):
+        if self.volume_modifier.is_alive():
+            self.volume_modifier.stop()
+
+
+class MouseButtonListener(BaseXListener):
+    """
+    Thread that listens to mouse buttons presses.
+    """
+
+    def run(self):
+        self.listen(device_events=(X.ButtonPress, X.ButtonRelease))
+
+    def processEvent(self, event):
+        if event.detail not in [10, 13]:
+            return
+        if event.type == X.ButtonPress:
+            if not self.volume_modifier.is_alive():
+                self.volume_modifier = VolumeModifierThread(self.volume)
+            if event.detail == 10:
+                self.volume_modifier.delta = -3
+            elif event.detail == 13:
+                self.volume_modifier.delta = +3
+            if not self.volume_modifier.is_alive():
+                self.volume_modifier.start()
+        elif event.type == X.ButtonRelease:
+            self.stop()
+
+
+class MediaKeyListener(BaseXListener):
+    """
+    Thread that listens to mouse buttons presses.
+    """
+
+    def run(self):
+        self.listen(device_events=(X.KeyPress, X.KeyRelease))
+
+    def processEvent(self, event):
+        if event.detail not in [121, 122, 123]:
+            return
+        if event.type == X.KeyPress:
+            if not self.volume_modifier.is_alive():
+                self.volume_modifier = VolumeModifierThread(self.volume)
+            if event.detail == 122:
+                self.volume_modifier.delta = -3
+            elif event.detail == 123:
+                self.volume_modifier.delta = +3
+            elif event.detail == 121:
+                self.volume_modifier.toggle_mute()
+                self.volume_modifier.stop()
+            if not self.volume_modifier.is_alive() and event.detail in [122, 123]:
+                self.volume_modifier.start()
+        elif event.type == X.KeyRelease:
+            self.stop()
