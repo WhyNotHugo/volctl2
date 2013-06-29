@@ -1,3 +1,5 @@
-#!/bin/sh
+#!/usr/bin/env python2
 
-python2 -c "import volctl2; volctl2.run()"
+import volctl2
+
+volctl2.run()
