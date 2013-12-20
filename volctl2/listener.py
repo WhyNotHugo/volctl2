@@ -41,26 +41,28 @@ class BaseXListener(threading.Thread):
         self.display = display.Display()
 
         r = self.display.record_get_version(0, 0)
-        print("RECORD extension version {}.{}".format(r.major_version, r.minor_version))
+        print("RECORD extension version {}.{}".format(r.major_version,
+              r.minor_version))
 
     def listen(self, device_events=(0, 0)):
         ctx = self.display.record_create_context(
-                0,
-                [record.AllClients],
-                [{
-                        'core_requests': (0, 0),
-                        'core_replies': (0, 0),
-                        'ext_requests': (0, 0, 0, 0),
-                        'ext_replies': (0, 0, 0, 0),
-                        'delivered_events': (0, 0),
-                        'device_events': device_events,
-                        'errors': (0, 0),
-                        'client_started': False,
-                        'client_died': False,
-                }])
+            0,
+            [record.AllClients],
+            [{
+                'core_requests': (0, 0),
+                'core_replies': (0, 0),
+                'ext_requests': (0, 0, 0, 0),
+                'ext_replies': (0, 0, 0, 0),
+                'delivered_events': (0, 0),
+                'device_events': device_events,
+                'errors': (0, 0),
+                'client_started': False,
+                'client_died': False,
+            }])
 
-        # Enable the context; this only returns after a call to record_disable_context,
-        # while calling the callback function in the meantime
+        # Enable the context; this only returns after a call to
+        # record_disable_context, while calling the callback function in the
+        # meantime
         self.display.record_enable_context(ctx, self.callback)
 
         # Finally free the context
@@ -77,7 +79,8 @@ class BaseXListener(threading.Thread):
 
         data = reply.data
         while len(data):
-            event, data = rq.EventField(None).parse_binary_value(data, self.display.display, None, None)
+            event, data = rq.EventField(None).parse_binary_value(
+                data, self.display.display, None, None)
             self.processEvent(event)
 
     def stop(self):
@@ -130,7 +133,8 @@ class MediaKeyListener(BaseXListener):
             elif event.detail == 121:
                 self.volume_modifier.toggle_mute()
                 self.volume_modifier.stop()
-            if not self.volume_modifier.is_alive() and event.detail in [122, 123]:
+            if not self.volume_modifier.is_alive() and \
+                    event.detail in [122, 123]:
                 self.volume_modifier.start()
         elif event.type == X.KeyRelease:
             self.stop()

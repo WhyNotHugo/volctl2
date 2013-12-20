@@ -18,10 +18,6 @@
 
 import threading
 import time
-try:
-    import alsaaudio
-except:
-    print("Error: need python-pyalsaaudio")
 
 
 class VolumeModifierThread(threading.Thread):
@@ -46,14 +42,15 @@ class VolumeModifierThread(threading.Thread):
             time.sleep(0.1)
 
     def change_volume(self, delta):
-        previous_volume = long(alsaaudio.Mixer().getvolume()[0])
+        previous_volume = self.volume.get_volume()
 
         new_volume = long(previous_volume + delta)
         if new_volume > 100:
             new_volume = 100
         if new_volume < 0:
             new_volume = 0
-        print('Delta is {}, volume was {}, setting to : {}'.format(delta, previous_volume, new_volume))
+        print('Delta is {}, volume was {}, setting to : {}'.format(delta,
+              previous_volume, new_volume))
 
         if previous_volume == 100 and delta > 0:
             print("Volume is 100 and requested increase; stopping.")

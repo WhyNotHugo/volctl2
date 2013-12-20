@@ -29,26 +29,34 @@ except:
 
 
 class VolumeNotification():
+    """
+    A libnotify notification, which displays the volume and shows several
+    buttons to alter it further.
+    """
 
-    def __init__(self):
-        """A wrapper around a libnotify notification, with several buttons, and volume-control functionality"""
+    def __init__(self, cardindex):
+        self.__cardindex = cardindex
 
-        self.__popup = pynotify.Notification("Volume", str(self.get_volume()) + "%", "audio-volume-medium")
+        self.__popup = pynotify.Notification("Volume", str(self.get_volume())
+                                             + "%", "audio-volume-medium")
         self.__popup.add_action("increase", "+", self.increase_volume)
         self.__popup.add_action("decrease", "-", self.decrease_volume)
         self.__popup.add_action("mute", "Mute", self.toggle_mute)
         self.__popup.show()
 
-        self._mixer = alsaaudio.Mixer()
+        self._mixer = alsaaudio.Mixer(cardindex=cardindex)
 
     def get_volume(self):
-        return alsaaudio.Mixer().getvolume()[0]
+        # A new mixer need to be created every time, since otherwise it keeps
+        # returning the same value (a bug in python2-alsaaudio?)
+        return alsaaudio.Mixer(cardindex=self.__cardindex).getvolume()[0]
 
     def alter_volume(self, delta):
         previous_volume = self.get_volume()
 
         new_volume = long(previous_volume + long(delta))
-        print 'Volume was {}, setting to : {}'.format(previous_volume, new_volume)
+        print 'Volume was {}, setting to : {}'.format(previous_volume,
+                                                      new_volume)
         if new_volume > 100:
             new_volume = 100
         if new_volume < 0:
@@ -79,7 +87,9 @@ class VolumeNotification():
 
     def _update(self):
         if not self.is_muted():
-            self.__popup.update("Volume", str(self.get_volume()) + "%", "audio-volume-medium")
+            self.__popup.update("Volume", str(self.get_volume()) + "%",
+                                "audio-volume-medium")
         else:
-            self.__popup.update("Volume", str(self.get_volume()) + "% (Muted)", "audio-volume-muted")
+            self.__popup.update("Volume", str(self.get_volume()) + "% (Muted)",
+                                "audio-volume-muted")
         self.__popup.show()
