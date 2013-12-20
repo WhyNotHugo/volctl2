@@ -23,6 +23,10 @@ from Xlib import display
 from threading import Thread
 import sys
 
+import json
+import os
+from xdg import BaseDirectory
+
 try:
     import gtk
     import pygtk
@@ -33,9 +37,19 @@ except:
 
 __version__ = "2.0.0"
 
+config_file = os.path.join(BaseDirectory.xdg_config_home,
+                           "volctl2/settings.json")
+if os.path.exists(config_file):
+    config = json.load(open(config_file))
+    cardindex = config["cardindex"]
+else:
+    cardindex = 0
+
 
 class GtkThread(Thread):
-    """This thread needs to run separately to handle button clicks on the volume"""
+    """
+    This thread needs to run separately to handle button clicks on the volume
+    """
     def __init__(self):
         super(GtkThread, self).__init__()
         gtk.gdk.threads_init()
@@ -54,7 +68,7 @@ def run():
         print("RECORD extension not found")
         sys.exit(1)
 
-    notification = VolumeNotification()
+    notification = VolumeNotification(cardindex=cardindex)
     MouseButtonListener(notification).start()
     MediaKeyListener(notification).start()
     GtkThread().start()
